@@ -24,3 +24,8 @@ require_once __DIR__ . '/includes/class-user.php';
 add_action('wp_ajax_nopriv_user_register', function() {
 	jptt\modules\User::user_register();
 });
+
+add_action('wp_ajax_nopriv_user_login', function () {
+	$user = new \jptt\modules\User();
+	$user->user_login();
+});

@@ -27,20 +27,33 @@ class User {
 	 * @since v0.0.1
 	 * @author jprieton
 	 */
-	public function user_login($submit) {
+	public function user_login() {
 
+		$Input = new \jptt\core\Input();
 		$Error = new \jptt\core\Error();
+		$verify_nonce = (bool) $Input->verify_wpnonce('user_login');
+
+		if (!$verify_nonce) {
+			$Error->method_not_supported('user_login');
+			wp_send_json_error($Error);
+		}
+
+		$submit = array(
+				'user_login' => $Input->post('user_email', FILTER_SANITIZE_STRING),
+				'user_password' => $Input->post('user_password', FILTER_SANITIZE_STRING),
+				'remember' => $Input->post('remember', FILTER_SANITIZE_STRING)
+		);
 
 		$user_id = username_exists($submit['user_login']);
 		if (empty($user_id)) {
 			$Error->add('user_failed', 'Usuario o contraseña incorrectos');
-			return $Error;
+			wp_send_json_error($Error);
 		}
 
 		$user_blocked = (bool) $this->is_user_blocked($user_id);
 		if ($user_blocked) {
 			$Error->add('user_blocked', 'Disculpa, usuario bloqueado');
-			return $Error;
+			wp_send_json_error($Error);
 		}
 
 		$user = wp_signon($submit, false);
@@ -52,9 +65,9 @@ class User {
 
 			if ($user_blocked) {
 				$Error = new WP_Error('user_blocked', 'Disculpa, usuario bloqueado');
-				return $Error;
+				wp_send_json_error($Error);
 			} else {
-				return $user;
+				wp_send_json_error($user);
 			}
 		} else {
 			$this->clear_user_attempt($user_id);
@@ -62,7 +75,7 @@ class User {
 					'code' => 'user_signon_success',
 					'message' => 'Has iniciado sesión exitosamente',
 			);
-			return $response;
+			wp_send_json_success($response);
 		}
 	}
 
@@ -195,7 +208,7 @@ class User {
 		$valid_pass = wp_check_password($current_pass, $current_user->get('user_pass'), $user_id);
 
 		if (!$valid_pass) {
-			$Error->add('bad_user_pass', __('Current pass invalid', 'jpwp'));
+			$Error->add('bad_user_pass', __('Current pass invalid', 'jptt'));
 			return $Error;
 		}
 
