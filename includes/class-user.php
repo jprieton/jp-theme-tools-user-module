@@ -20,6 +20,7 @@ class User {
 
 	public function __construct() {
 		$this->max_login_attempts = (int) get_option( 'max-login-attemps', -1 );
+		$this->max_login_attempts = 3;
 	}
 
 	/**
@@ -49,6 +50,8 @@ class User {
 			$Error->add( 'user_failed', 'Usuario o contraseña incorrectos' );
 			wp_send_json_error( $Error );
 		}
+
+		do_action('pre_user_login', $user_id);
 
 		$user_blocked = (bool) $this->is_user_blocked( $user_id );
 		if ( $user_blocked ) {
@@ -103,7 +106,7 @@ class User {
 			wp_send_json_error( $Error );
 		}
 
-		do_action( 'pre_user_register' );
+		do_action( 'user_pre_register' );
 
 		$userdata = array(
 				'user_pass' => $Input->post( 'user_password' ),
@@ -123,7 +126,7 @@ class User {
 
 		$user_id = wp_insert_user( $userdata );
 
-		do_action( 'post_user_register', $user_id );
+		do_action( 'user_post_register', $user_id );
 
 		if ( is_wp_error( $user_id ) ) {
 			wp_send_json_error( $user_id );
